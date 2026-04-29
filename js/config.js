@@ -9,6 +9,7 @@
 // 4. Copie o objeto firebaseConfig e cole abaixo
 // ============================================================
 
+// js/config.js
 const firebaseConfig = {
   apiKey: "AIzaSyDP-04tBEyIq2xCYL5j2-hE1wLDchuiq5s",
   authDomain: "cecan-refeicoes.firebaseapp.com",
@@ -18,23 +19,13 @@ const firebaseConfig = {
   appId: "1:924255868425:web:47757a36a550016bf34ad8"
 };
 
-// Inicializa só uma vez
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-// NÃO usar const de novo em outros arquivos!
-var db = firebase.firestore();
+var db   = firebase.firestore();
 var auth = firebase.auth();
 
-// ── Inicializa Firebase ──────────────────────────────────────
-firebase.initializeApp(firebaseConfig);
-
-// ── Referências globais ──────────────────────────────────────
-const db   = firebase.firestore();
-const auth = firebase.auth();
-
-// ── Habilitar persistência offline (opcional) ────────────────
 db.enablePersistence({ synchronizeTabs: true })
   .catch(err => {
     if (err.code === 'failed-precondition') {
