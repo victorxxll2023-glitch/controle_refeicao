@@ -10,13 +10,22 @@
 // ============================================================
 
 const firebaseConfig = {
-  apiKey:            "COLE_AQUI_SUA_API_KEY",
-  authDomain:        "seu-projeto.firebaseapp.com",
-  projectId:         "seu-projeto",
-  storageBucket:     "seu-projeto.appspot.com",
-  messagingSenderId: "000000000000",
-  appId:             "1:000000000000:web:xxxxxxxxxxxx"
+  apiKey: "AIzaSyDP-04tBEyIq2xCYL5j2-hE1wLDchuiq5s",
+  authDomain: "cecan-refeicoes.firebaseapp.com",
+  projectId: "cecan-refeicoes",
+  storageBucket: "cecan-refeicoes.firebasestorage.app",
+  messagingSenderId: "924255868425",
+  appId: "1:924255868425:web:47757a36a550016bf34ad8"
 };
+
+// Inicializa só uma vez
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+
+// NÃO usar const de novo em outros arquivos!
+var db = firebase.firestore();
+var auth = firebase.auth();
 
 // ── Inicializa Firebase ──────────────────────────────────────
 firebase.initializeApp(firebaseConfig);
