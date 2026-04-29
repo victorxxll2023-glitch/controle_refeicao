@@ -68,21 +68,16 @@ const DB = (() => {
 
   /* ─────────────────── SETORES ───────────────────────────── */
 
-  async function getSectors() {
-    try {
-      const snap = await db.collection(COL_SECTORS).orderBy('name').get();
-      if (snap.empty) {
-        // Inicializar setores padrão se coleção vazia
-        await initDefaultSectors();
-        return getDefaultSectorList();
-      }
-      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (err) {
-      console.error('getSectors:', err);
-      // Fallback para lista padrão se coleção não existir
-      return getDefaultSectorList();
-    }
+ async function getSectors() {
+  try {
+    const snap = await db.collection(COL_SECTORS).orderBy('name').get();
+    if (snap.empty) return getDefaultSectorList();
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.error('getSectors:', err);
+    return getDefaultSectorList();
   }
+}
 
   function getDefaultSectorList() {
     return [
@@ -92,17 +87,6 @@ const DB = (() => {
       'Segurança','TI','UTI','Outro'
     ].map((name, i) => ({ id: `default_${i}`, name }));
   }
-
-  async function initDefaultSectors() {
-    const defaults = getDefaultSectorList();
-    const batch = db.batch();
-    defaults.forEach(s => {
-      const ref = db.collection(COL_SECTORS).doc();
-      batch.set(ref, { name: s.name, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-    });
-    await batch.commit().catch(() => {}); // Silencia erros de permissão
-  }
-
   async function addSector(name) {
     const trimmed = name.trim();
     if (!trimmed) throw new Error('Nome do setor é obrigatório.');
