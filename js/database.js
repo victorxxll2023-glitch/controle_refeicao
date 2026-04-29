@@ -1,11 +1,6 @@
 // ============================================================
 // js/database.js — Operações Firestore (CORRIGIDO)
 // ============================================================
-// Estrutura de coleções:
-//   employees/{id}       → dados do funcionário
-//   attendance/{id}      → registro de presença (id = YYYY-MM-DD_matricula)
-//   sectors/{id}         → setores (CRUD completo)
-// ============================================================
 
 const DB = (() => {
   const COL_EMP     = 'employees';
@@ -62,22 +57,22 @@ const DB = (() => {
   }
 
   async function deleteEmployee(id) {
-    // FIX: retorna promise simples sem estado extra
     return db.collection(COL_EMP).doc(id).delete();
   }
 
   /* ─────────────────── SETORES ───────────────────────────── */
 
- async function getSectors() {
-  try {
-    const snap = await db.collection(COL_SECTORS).orderBy('name').get();
-    if (snap.empty) return getDefaultSectorList();
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch (err) {
-    console.error('getSectors:', err);
-    return getDefaultSectorList();
+  async function getSectors() {
+    try {
+      const snap = await db.collection(COL_SECTORS).orderBy('name').get();
+      // Se vazio, retorna lista padrão LOCAL (sem salvar no Firestore)
+      if (snap.empty) return getDefaultSectorList();
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (err) {
+      console.error('getSectors:', err);
+      return getDefaultSectorList();
+    }
   }
-}
 
   function getDefaultSectorList() {
     return [
@@ -87,10 +82,10 @@ const DB = (() => {
       'Segurança','TI','UTI','Outro'
     ].map((name, i) => ({ id: `default_${i}`, name }));
   }
+
   async function addSector(name) {
     const trimmed = name.trim();
     if (!trimmed) throw new Error('Nome do setor é obrigatório.');
-    // Verificar duplicata
     const snap = await db.collection(COL_SECTORS)
       .where('name', '==', trimmed).limit(1).get();
     if (!snap.empty) throw new Error('Já existe um setor com esse nome.');
@@ -117,7 +112,12 @@ const DB = (() => {
     return db.collection(COL_SECTORS)
       .orderBy('name')
       .onSnapshot(
-        snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+        snap => {
+          const list = snap.empty
+            ? getDefaultSectorList()
+            : snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          callback(list);
+        },
         err => console.error('listenSectors:', err)
       );
   }
@@ -137,11 +137,8 @@ const DB = (() => {
   async function markAttendance(employee, date, time) {
     const docId  = _attId(date, employee.matricula);
     const docRef = db.collection(COL_ATT).doc(docId);
-
-    // FIX: usar set com merge:false para garantir atomicidade
     const snap = await docRef.get();
     if (snap.exists) throw new Error('Presença já registrada para hoje.');
-
     await docRef.set({
       employeeId: employee.id,
       name:       employee.name,
@@ -151,11 +148,9 @@ const DB = (() => {
       time:       time,
       timestamp:  firebase.firestore.FieldValue.serverTimestamp(),
     });
-
     return { docId, date, time };
   }
 
-  // FIX: Desmarcar presença (toggle)
   async function cancelAttendance(matricula, date) {
     const docId = _attId(date, matricula);
     return db.collection(COL_ATT).doc(docId).delete();
@@ -164,8 +159,7 @@ const DB = (() => {
   async function getAttendanceByDate(date) {
     try {
       const snap = await db.collection(COL_ATT)
-        .where('date', '==', date)
-        .get();
+        .where('date', '==', date).get();
       return snap.docs.map(d => d.data());
     } catch (err) {
       console.error('getAttendanceByDate:', err);
@@ -186,30 +180,23 @@ const DB = (() => {
     }
   }
 
-  // FIX PRINCIPAL: getEmployeeHistory — query corrigida
-  // O erro ocorria porque o índice composto pode não existir.
-  // Solução: buscar por matricula (mais simples e sem índice composto)
   async function getEmployeeHistory(employeeId) {
     try {
-      // Primeiro tentamos por employeeId com orderBy (requer índice)
       const snap = await db.collection(COL_ATT)
         .where('employeeId', '==', employeeId)
         .orderBy('date', 'desc')
         .get();
       return snap.docs.map(d => d.data());
     } catch (err) {
-      // FIX: Fallback sem orderBy caso índice não exista
       console.warn('getEmployeeHistory com índice falhou, usando fallback:', err.message);
       try {
         const snap = await db.collection(COL_ATT)
-          .where('employeeId', '==', employeeId)
-          .get();
-        const records = snap.docs.map(d => d.data());
-        // Ordenar no cliente
-        return records.sort((a, b) => b.date.localeCompare(a.date));
+          .where('employeeId', '==', employeeId).get();
+        return snap.docs.map(d => d.data())
+          .sort((a, b) => b.date.localeCompare(a.date));
       } catch (err2) {
         console.error('getEmployeeHistory fallback:', err2);
-        throw new Error('Não foi possível carregar o histórico. Verifique os índices do Firestore.');
+        throw new Error('Não foi possível carregar o histórico.');
       }
     }
   }
@@ -217,10 +204,9 @@ const DB = (() => {
   async function getHistoryByMatricula(matricula) {
     try {
       const snap = await db.collection(COL_ATT)
-        .where('matricula', '==', String(matricula))
-        .get();
-      const records = snap.docs.map(d => d.data());
-      return records.sort((a, b) => b.date.localeCompare(a.date));
+        .where('matricula', '==', String(matricula)).get();
+      return snap.docs.map(d => d.data())
+        .sort((a, b) => b.date.localeCompare(a.date));
     } catch (err) {
       console.error('getHistoryByMatricula:', err);
       throw err;
@@ -235,7 +221,6 @@ const DB = (() => {
       db.collection(COL_ATT).get(),
       db.collection(COL_SECTORS).get().catch(() => ({ docs: [] })),
     ]);
-
     return {
       exportedAt: new Date().toISOString(),
       version:    '2.0',
@@ -249,26 +234,21 @@ const DB = (() => {
     if (!data.employees || !data.attendance) {
       throw new Error('Formato de backup inválido.');
     }
-
     const batch = db.batch();
-
     for (const emp of data.employees) {
       const { id, ...fields } = emp;
       batch.set(db.collection(COL_EMP).doc(id), fields, { merge: true });
     }
-
     for (const att of data.attendance) {
       const { id, ...fields } = att;
       batch.set(db.collection(COL_ATT).doc(id), fields, { merge: true });
     }
-
     if (data.sectors) {
       for (const sec of data.sectors) {
         const { id, ...fields } = sec;
         batch.set(db.collection(COL_SECTORS).doc(id), fields, { merge: true });
       }
     }
-
     await batch.commit();
     return {
       employees:  data.employees.length,
@@ -298,19 +278,14 @@ const DB = (() => {
   }
 
   return {
-    // Funcionários
     getEmployees, getEmployeeByMatricula,
     addEmployee, updateEmployee, deleteEmployee,
-    // Setores
     getSectors, addSector, updateSector, deleteSector,
     listenSectors, getDefaultSectorList,
-    // Presenças
     checkAttendance, markAttendance, cancelAttendance,
     getAttendanceByDate, getAttendanceByDateRange,
     getEmployeeHistory, getHistoryByMatricula,
-    // Backup
     exportAll, importBackup,
-    // Real-time
     listenEmployees, listenAttendance,
   };
 })();
