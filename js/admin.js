@@ -143,9 +143,7 @@
   }
 
   function populateSetorSelect(selectEl, currentValue = '') {
-    const options = sectors.length > 0
-      ? sectors
-      : DB.getDefaultSectorList();
+    const options = sectors;
 
     selectEl.innerHTML = '<option value="">Selecione...</option>' +
       options.map(s => `<option value="${Utils.escHtml(s.name)}"
@@ -681,7 +679,7 @@
   DB.getSectors().then(list => {
     sectors = list;
   }).catch(() => {
-    sectors = DB.getDefaultSectorList();
+    sectors = [];
   });
 
   // Toggle painel de setores dentro da aba funcionários
