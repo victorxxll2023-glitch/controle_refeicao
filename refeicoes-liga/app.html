@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#00c9a7">
+  <title>Registro de Refeições · CECAN</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ── Layout específico desta página ──────────────────── */
+    .app-layout {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-body {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-width: 860px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── Topo com data e stats ───────────────────────────── */
+    .day-header {
+      background: linear-gradient(135deg, var(--bg-2), var(--bg-3));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .day-info h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-1);
+      margin-bottom: 2px;
+    }
+
+    .day-info p {
+      font-size: .8rem;
+      color: var(--text-3);
+    }
+
+    .stats-mini {
+      display: flex;
+      gap: 8px;
+    }
+
+    .stat-mini {
+      background: var(--bg-0);
+      border: 1px solid var(--border-sub);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      text-align: center;
+      min-width: 58px;
+    }
+
+    .stat-mini .n {
+      font-family: var(--font-head);
+      font-size: 1.4rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .stat-mini.marked .n { color: var(--success); }
+    .stat-mini.pending .n { color: var(--warning); }
+
+    .stat-mini .l {
+      font-size: .65rem;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-top: 2px;
+    }
+
+    /* ── Busca ───────────────────────────────────────────── */
+    .search-section {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-section .search-wrap { flex: 1; }
+
+    /* ── Toolbar da lista ────────────────────────────────── */
+    .list-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2px;
+    }
+
+    .filter-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .filter-btn {
+      background: var(--bg-2);
+      border: 1px solid var(--border-sub);
+      border-radius: 99px;
+      padding: 5px 14px;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: all var(--t);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-dim);
+      border-color: var(--border);
+      color: var(--accent);
+    }
+
+    /* ── Employee card - uso diário ─────────────────────── */
+    .emp-card .btn-mark {
+      min-width: 128px;
+    }
+
+    /* ── Área de scroll da lista ─────────────────────────── */
+    .list-scroll {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-bottom: 80px; /* space for FAB */
+    }
+  </style>
+</head>
+
+<body>
+<div class="app-layout">
+
+  <!-- ── Topbar ──────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="logo-mark">🍽</div>
+      <div>
+        <h1>Registro de Refeições</h1>
+        <span>CECAN · Liga Contra o Câncer</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="theme-toggle" id="theme-toggle" title="Alternar tema" aria-label="Alternar tema"></button>
+      <a href="admin.html" class="btn btn-ghost btn-icon" title="Painel Admin">⚙</a>
+      <button class="btn btn-ghost btn-icon" id="logout-btn" title="Sair">↩</button>
+    </div>
+  </header>
+
+  <!-- ── Corpo principal ─────────────────────────────────── -->
+  <main class="app-body page-enter">
+
+    <!-- Cabeçalho do dia -->
+    <div class="day-header">
+      <div class="day-info">
+        <h2>🍴 Almoço de hoje</h2>
+        <p id="today-label">Carregando...</p>
+      </div>
+      <div class="stats-mini">
+        <div class="stat-mini">
+          <div class="n" id="stat-total">–</div>
+          <div class="l">Total</div>
+        </div>
+        <div class="stat-mini marked">
+          <div class="n" id="stat-marked">–</div>
+          <div class="l">Marcados</div>
+        </div>
+        <div class="stat-mini pending">
+          <div class="n" id="stat-pending">–</div>
+          <div class="l">Pendentes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Busca -->
+    <div class="search-section">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input
+          class="search-input"
+          type="search"
+          id="search"
+          placeholder="Buscar por nome ou matrícula..."
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          inputmode="search"
+        >
+        <button class="search-clear" id="search-clear" aria-label="Limpar busca">✕</button>
+      </div>
+    </div>
+
+    <!-- Toolbar da lista -->
+    <div class="list-toolbar">
+      <span class="list-count" id="list-count">Carregando...</span>
+      <div class="filter-btns">
+        <!-- filtros futuros aqui -->
+      </div>
+    </div>
+
+    <!-- Lista de funcionários -->
+    <div class="list-scroll">
+      <div class="emp-list" id="emp-list">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── FAB: Scanner QR ──────────────────────────────────── -->
+<button class="fab" id="fab-qr" title="Escanear QR Code" aria-label="Escanear QR Code">
+  <span>▣</span>
+  <span class="fab-label">Escanear QR Code</span>
+</button>
+
+<!-- ── Modal: Histórico ────────────────────────────────── -->
+<div class="modal-overlay" id="history-modal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="history-name">Histórico</h3>
+      <span id="history-count" class="badge badge-accent" style="margin-left:auto"></span>
+      <button class="btn btn-ghost btn-icon" onclick="document.getElementById('history-modal').classList.remove('open')" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body" id="history-body" style="max-height:340px;overflow-y:auto">
+      <div class="loading-spinner"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('history-modal').classList.remove('open')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: QR Scanner ────────────────────────────────── -->
+<div class="modal-overlay" id="qr-modal" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>📷 Escanear QR Code</h3>
+      <button class="btn btn-ghost btn-icon" id="close-qr" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.85rem;color:var(--text-2);margin-bottom:14px">
+        Aponte a câmera do tablet para o crachá do funcionário.
+      </p>
+      <div id="reader" style="width:100%"></div>
+      <p id="qr-result" style="text-align:center;font-size:.85rem;color:var(--text-3);margin-top:12px">
+        Aguardando leitura...
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast container ──────────────────────────────────── -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ── Firebase ─────────────────────────────────────────── -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<!-- ── QR Scanner ───────────────────────────────────────── -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<!-- ── App scripts ──────────────────────────────────────── -->
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/database.js"></script>
+
+<script>
+  // Verificar autenticação
+  auth.onAuthStateChanged(user => {
+    if (!user) window.location.href = 'index.html';
+  });
+</script>
+
+<script src="js/daily.js"></script>
+</body>
+</html>
