@@ -7,23 +7,16 @@
   <title>Painel Admin · Controle de Refeições CECAN</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .admin-layout {
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden; /* FIX: sem scroll horizontal */
-    }
-
+    .admin-layout { min-height: 100dvh; display: flex; flex-direction: column; }
     .admin-body {
       flex: 1;
-      padding: 12px 16px;
+      padding: 16px;
       max-width: 960px;
       margin: 0 auto;
       width: 100%;
-      box-sizing: border-box;
     }
 
-    /* Toolbar */
+    /* Toolbar do admin */
     .admin-toolbar {
       display: flex;
       align-items: center;
@@ -33,24 +26,30 @@
       flex-wrap: wrap;
     }
 
+    .admin-toolbar-right { display: flex; gap: 8px; align-items: center; }
+
     /* Tabs */
     .tabs-wrap {
-      margin-bottom: 18px;
+      margin-bottom: 20px;
       overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
     }
 
-    /* Ações de linha */
-    .row-actions {
+    /* Employee table toolbar */
+    .table-toolbar {
       display: flex;
-      gap: 6px;
-      justify-content: flex-end;
-      flex-wrap: nowrap;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-sub);
+      flex-wrap: wrap;
     }
+
+    .table-toolbar .search-wrap { flex: 1; min-width: 200px; }
+    .table-toolbar .search-input { height: 46px; font-size: .95rem; }
+    .table-toolbar .search-icon { font-size: 1rem; }
 
     /* Period buttons */
     .period-btns { display: flex; gap: 6px; flex-wrap: wrap; }
-
     .period-btn {
       background: var(--bg-3);
       border: 1px solid var(--border-sub);
@@ -62,7 +61,6 @@
       cursor: pointer;
       transition: all var(--t);
     }
-
     .period-btn.active {
       background: var(--accent-dim);
       border-color: var(--border);
@@ -91,12 +89,11 @@
       border-radius: var(--radius-lg);
       gap: 16px;
     }
-
     .backup-card-info { display: flex; flex-direction: column; gap: 4px; }
     .backup-card-info h4 { color: var(--text-1); }
-    .backup-card-info p  { font-size: .82rem; color: var(--text-3); }
+    .backup-card-info p { font-size: .82rem; color: var(--text-3); }
 
-    /* Report */
+    /* Report preview */
     .report-actions {
       display: flex;
       align-items: center;
@@ -114,43 +111,14 @@
       border-bottom: 1px solid var(--border);
       font-size: .85rem;
       color: var(--accent);
-    }
-
-    /* Erro state */
-    .err-state {
-      text-align: center;
-      padding: 20px;
-      color: var(--danger);
-      font-size: .9rem;
-    }
-
-    /* Sectors container herda do table-wrap */
-    .sectors-container { margin-top: 0; }
-
-    /* Tabela de setores */
-    .table-toolbar {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border-sub);
-      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .table-toolbar .search-wrap { flex: 1; min-width: 200px; }
-
-    /* Responsividade */
-    @media (max-width: 600px) {
-      .admin-body { padding: 10px 12px; }
+    @media (max-width: 640px) {
       .backup-card { flex-direction: column; align-items: flex-start; }
-      .dl-btns { flex-direction: column; width: 100%; }
-      .dl-btns .btn { width: 100%; justify-content: center; }
-      .report-actions { flex-direction: column; align-items: stretch; }
-      .data-table th:nth-child(3),
-      .data-table td:nth-child(3) { display: none; } /* esconder setor em mobile */
-      .admin-toolbar { flex-direction: column; align-items: flex-start; }
-      .admin-toolbar .btn { width: 100%; }
-      .topbar-brand span { display: none; }
+      .dl-btns { flex-direction: column; }
     }
 
     @media print {
@@ -188,7 +156,6 @@
     <div class="tabs-wrap no-print">
       <div class="tabs">
         <button class="tab-btn active" data-tab="employees">👤 Funcionários</button>
-        <button class="tab-btn" data-tab="sectors">🏥 Setores</button>
         <button class="tab-btn" data-tab="reports">📊 Relatórios</button>
         <button class="tab-btn" data-tab="qrcodes">▣ QR Codes</button>
         <button class="tab-btn" data-tab="backup">💾 Backup</button>
@@ -198,30 +165,35 @@
     <!-- ══════════ TAB: FUNCIONÁRIOS ══════════ -->
     <div class="tab-panel active" id="tab-employees">
 
+      <!-- Toolbar -->
       <div class="admin-toolbar no-print">
         <div>
           <h2>Funcionários Cadastrados</h2>
           <p style="font-size:.82rem;color:var(--text-3)" id="emp-count">Carregando...</p>
         </div>
-        <button class="btn btn-primary btn-lg" id="btn-add-emp">+ Novo Funcionário</button>
+        <button class="btn btn-primary btn-lg" id="btn-add-emp">
+          + Novo Funcionário
+        </button>
       </div>
 
       <div class="table-wrap">
+        <!-- Busca -->
         <div class="table-toolbar no-print">
-          <div class="search-wrap">
+          <div class="search-wrap" style="flex:1;min-width:200px">
             <span class="search-icon">🔍</span>
             <input class="search-input" type="search" id="admin-search"
               placeholder="Buscar funcionário..." autocomplete="off">
           </div>
         </div>
 
+        <!-- Tabela -->
         <div class="table-scroll">
           <table class="data-table">
             <thead>
               <tr>
                 <th>Nome</th>
                 <th>Matrícula</th>
-                <th>Setor</th>
+                <th>Setor/Unidade</th>
                 <th style="text-align:right">Ações</th>
               </tr>
             </thead>
@@ -234,12 +206,6 @@
 
     </div>
 
-    <!-- ══════════ TAB: SETORES ══════════ -->
-    <!-- O conteúdo é renderizado dinamicamente pelo admin.js -->
-    <div class="tab-panel" id="tab-sectors">
-      <div class="loading-spinner"></div>
-    </div>
-
     <!-- ══════════ TAB: RELATÓRIOS ══════════ -->
     <div class="tab-panel" id="tab-reports">
 
@@ -250,6 +216,7 @@
         </div>
       </div>
 
+      <!-- Seleção de período -->
       <div class="no-print" style="margin-bottom:16px">
         <div class="section-title">Período</div>
         <div class="period-btns">
@@ -259,12 +226,14 @@
         </div>
       </div>
 
+      <!-- Preview do relatório -->
       <div class="report-preview">
         <div class="report-header">
-          <div class="report-title">📋 Relatório de Refeições</div>
+          <div class="report-title">📋 Relatório Semanal de Refeições</div>
           <div class="report-sub" id="report-period-label">Calculando período...</div>
         </div>
 
+        <!-- Ações de download -->
         <div class="report-actions no-print">
           <span id="report-summary" style="font-size:.85rem;color:var(--text-2)"></span>
           <div class="dl-btns">
@@ -273,6 +242,10 @@
           </div>
         </div>
 
+        <!-- Resumo -->
+        <div class="report-summary-bar" id="report-summary-bar" style="display:none"></div>
+
+        <!-- Tabela de preview -->
         <div class="table-scroll">
           <table class="data-table">
             <thead>
@@ -304,6 +277,7 @@
         <button class="btn btn-primary no-print" id="btn-print-qr">🖨 Imprimir Todos</button>
       </div>
 
+      <!-- Busca de QR -->
       <div class="no-print" style="margin-bottom:12px">
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
@@ -312,7 +286,9 @@
         </div>
       </div>
 
-      <div id="qr-list"><div class="loading-spinner"></div></div>
+      <div id="qr-list">
+        <div class="loading-spinner"></div>
+      </div>
 
     </div>
 
@@ -328,31 +304,42 @@
 
       <div style="display:flex;flex-direction:column;gap:12px">
 
+        <!-- Exportar -->
         <div class="backup-card">
           <div class="backup-card-info">
             <h4>⬇ Exportar Backup Completo</h4>
-            <p>Baixa todos os funcionários, setores e registros de presença em formato JSON.</p>
+            <p>Baixa todos os funcionários e registros de presença em formato JSON.<br>
+              Recomendado: realize um backup semanalmente.</p>
           </div>
-          <button class="btn btn-primary btn-lg" id="btn-export">⬇ Exportar Backup JSON</button>
+          <button class="btn btn-primary btn-lg" id="btn-export">
+            ⬇ Exportar Backup JSON
+          </button>
         </div>
 
+        <!-- Importar -->
         <div class="backup-card">
           <div class="backup-card-info">
             <h4>⬆ Importar Backup</h4>
-            <p>Restaura ou mescla dados a partir de um arquivo JSON exportado anteriormente.</p>
+            <p>Restaura ou mescla dados a partir de um arquivo JSON exportado anteriormente.<br>
+              Dados existentes não serão apagados — apenas mesclados.</p>
           </div>
           <div>
             <input type="file" id="import-file" accept=".json" style="display:none">
-            <button class="btn btn-secondary btn-lg" id="btn-import">⬆ Importar Arquivo JSON</button>
+            <button class="btn btn-secondary btn-lg" id="btn-import">
+              ⬆ Importar Arquivo JSON
+            </button>
           </div>
         </div>
 
+        <!-- Info -->
         <div class="card" style="background:var(--warning-dim);border-color:rgba(255,179,71,.25)">
           <h4 style="color:var(--warning);margin-bottom:8px">⚠ Informações importantes</h4>
-          <p style="font-size:.85rem;color:var(--text-2);line-height:1.7">
-            Os dados ficam armazenados no Firebase (nuvem). Realize backups periódicos como segurança adicional.
-            A importação mescla dados — ela não apaga registros existentes.
-          </p>
+          <ul style="display:flex;flex-direction:column;gap:8px;font-size:.85rem;color:var(--text-2);padding-left:16px;list-style:disc">
+            <li>Os dados são armazenados no Firebase (nuvem) e ficam disponíveis em todos os dispositivos.</li>
+            <li>Realize backups periódicos como medida de segurança adicional.</li>
+            <li>A importação mescla dados — ela não apaga registros já existentes.</li>
+            <li>Em caso de dúvidas, contate o administrador do sistema Firebase.</li>
+          </ul>
         </div>
 
       </div>
@@ -371,7 +358,7 @@
       <button class="btn btn-ghost btn-icon" id="close-emp-modal" aria-label="Fechar">✕</button>
     </div>
     <form class="modal-body" id="emp-form" novalidate>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="form-grid form-grid-2" style="gap:14px">
 
         <div class="form-group" style="grid-column:1/-1">
           <label class="form-label" for="field-name">Nome Completo</label>
@@ -390,16 +377,33 @@
         <div class="form-group">
           <label class="form-label" for="field-setor">Setor / Unidade</label>
           <select class="form-select" id="field-setor" required>
-            <option value="">Carregando setores...</option>
+            <option value="">Selecione...</option>
+            <option>Administrativo</option>
+            <option>Cirurgia</option>
+            <option>Enfermagem</option>
+            <option>Farmácia</option>
+            <option>Laboratório</option>
+            <option>Limpeza</option>
+            <option>Manutenção</option>
+            <option>Nutrição</option>
+            <option>Oncologia</option>
+            <option>Quimioterapia</option>
+            <option>Radiologia</option>
+            <option>Recepção</option>
+            <option>Segurança</option>
+            <option>TI</option>
+            <option>UTI</option>
+            <option>Outro</option>
           </select>
         </div>
 
       </div>
 
       <div id="form-error" class="form-error" style="margin-top:10px"></div>
+
     </form>
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary"
+      <button type="button" class="btn btn-secondary" id="close-emp-modal2"
         onclick="document.getElementById('emp-modal').classList.remove('open')">Cancelar</button>
       <button type="submit" form="emp-form" class="btn btn-primary btn-lg" id="btn-save-emp">Salvar</button>
     </div>
@@ -417,8 +421,10 @@
       <div class="confirm-box">
         <div class="confirm-icon">⚠️</div>
         <h3>Excluir funcionário?</h3>
-        <p>Tem certeza que deseja excluir <strong id="confirm-name"></strong>?<br>
-           Esta ação não pode ser desfeita.</p>
+        <p>
+          Tem certeza que deseja excluir <strong id="confirm-name"></strong>?<br>
+          Esta ação não pode ser desfeita.
+        </p>
       </div>
     </div>
     <div class="modal-footer">
@@ -428,7 +434,7 @@
   </div>
 </div>
 
-<!-- Toast -->
+<!-- Toast container -->
 <div class="toast-container" id="toast-container"></div>
 
 <!-- ── Firebase ─────────────────────────────────────────── -->
@@ -436,7 +442,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<!-- jsPDF + AutoTable -->
+<!-- jsPDF + AutoTable (PDF export) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
@@ -451,9 +457,12 @@
 <script src="js/reports.js"></script>
 
 <script>
+  // Verificar autenticação
   auth.onAuthStateChanged(user => {
     if (!user) window.location.href = 'index.html';
   });
+
+  // Aplicar tema salvo
   const t = localStorage.getItem('liga-theme') || 'dark';
   document.documentElement.setAttribute('data-theme', t);
 </script>

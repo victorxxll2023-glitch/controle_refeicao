@@ -1,13 +1,12 @@
 // ============================================================
-// js/daily.js — Lógica da tela de uso diário (CORRIGIDO)
+// js/daily.js — Lógica da tela de uso diário (app.html)
 // ============================================================
 
 (async () => {
   // ── Estado ──────────────────────────────────────────────
-  let allEmployees = [];
-  let markedToday  = {};   // { matricula: time }
+  let allEmployees = [];     // todos os funcionários
+  let markedToday  = {};     // { matricula: time }
   let searchTerm   = '';
-  let filterMode   = 'all'; // 'all' | 'pending' | 'marked'
   let qrScanner    = null;
 
   // ── Elementos do DOM ────────────────────────────────────
@@ -42,13 +41,13 @@
   });
 
   // ── Busca ────────────────────────────────────────────────
-  searchInput?.addEventListener('input', Utils.debounce(e => {
+  searchInput.addEventListener('input', Utils.debounce(e => {
     searchTerm = e.target.value.trim();
-    searchClear?.classList.toggle('visible', searchTerm.length > 0);
+    searchClear.classList.toggle('visible', searchTerm.length > 0);
     renderList();
   }, 150));
 
-  searchClear?.addEventListener('click', () => {
+  searchClear.addEventListener('click', () => {
     searchInput.value = '';
     searchTerm = '';
     searchClear.classList.remove('visible');
@@ -56,38 +55,20 @@
     renderList();
   });
 
-  // ── Filtros ──────────────────────────────────────────────
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      filterMode = btn.dataset.filter;
-      renderList();
-    });
-  });
-
   // ── Renderizar lista ─────────────────────────────────────
   function renderList() {
     const term = Utils.normalize(searchTerm);
 
     let filtered = allEmployees.filter(emp => {
-      // Filtro por texto
-      const matchText = !term ||
+      if (!term) return true;
+      return (
         Utils.normalize(emp.name).includes(term) ||
         Utils.normalize(emp.matricula).includes(term) ||
-        Utils.normalize(emp.setor).includes(term);
-
-      // Filtro por status
-      const isMarked = !!markedToday[emp.matricula];
-      const matchFilter =
-        filterMode === 'all'     ? true :
-        filterMode === 'marked'  ? isMarked :
-        filterMode === 'pending' ? !isMarked : true;
-
-      return matchText && matchFilter;
+        Utils.normalize(emp.setor).includes(term)
+      );
     });
 
-    // Ordenar: não-marcados primeiro, depois alfabético
+    // Ordenar: não-marcados primeiro, depois alphabético
     filtered.sort((a, b) => {
       const aM = !!markedToday[a.matricula];
       const bM = !!markedToday[b.matricula];
@@ -102,24 +83,16 @@
         <div class="empty-state">
           <span class="empty-icon">🔍</span>
           <h3>Nenhum resultado</h3>
-          <p>${searchTerm
-            ? `Nenhum funcionário encontrado para "${Utils.escHtml(searchTerm)}"`
-            : filterMode !== 'all'
-              ? 'Nenhum funcionário nesta categoria.'
-              : 'Nenhum funcionário cadastrado ainda.'}</p>
+          <p>${searchTerm ? `Nenhum funcionário encontrado para "${Utils.escHtml(searchTerm)}"` : 'Nenhum funcionário cadastrado ainda.'}</p>
         </div>`;
       return;
     }
 
     empList.innerHTML = filtered.map(emp => buildCard(emp)).join('');
 
-    // FIX: Usar delegação de evento para evitar problemas de estado
+    // Delegação de eventos nos botões
     empList.querySelectorAll('[data-mark]').forEach(btn => {
-      btn.addEventListener('click', () => handleToggle(btn.dataset.mark));
-    });
-
-    empList.querySelectorAll('[data-unmark]').forEach(btn => {
-      btn.addEventListener('click', () => handleUnmark(btn.dataset.unmark));
+      btn.addEventListener('click', () => handleMark(btn.dataset.mark));
     });
 
     empList.querySelectorAll('[data-history]').forEach(btn => {
@@ -151,11 +124,8 @@
       <div class="emp-action">
         <span class="mark-time">${marked ? `✓ ${time}` : ''}</span>
         ${marked
-          ? `<div style="display:flex;gap:6px;align-items:center">
-               <button class="btn btn-ghost btn-sm hist-btn" data-history="${emp.id}" data-name="${Utils.escHtml(emp.name)}">Histórico</button>
-               <button class="btn-unmark" data-unmark="${emp.matricula}" title="Desmarcar presença">✕</button>
-             </div>`
-          : `<button class="btn-mark" data-mark="${emp.matricula}">
+          ? `<button class="btn btn-secondary btn-sm" style="height:40px;font-size:.82rem;" data-history="${emp.id}" data-name="${Utils.escHtml(emp.name)}">Histórico</button>`
+          : `<button class="btn-mark" data-mark="${emp.matricula}" style="width:140px;">
                <span>✓</span> Marcar
              </button>`
         }
@@ -163,31 +133,26 @@
     </div>`;
   }
 
-  // ── Toggle: Marcar / Desmarcar ───────────────────────────
-  async function handleToggle(matricula) {
-    if (markedToday[matricula]) {
-      await handleUnmark(matricula);
-    } else {
-      await handleMark(matricula);
-    }
-  }
-
+  // ── Marcar presença ──────────────────────────────────────
   async function handleMark(matricula) {
     const emp = allEmployees.find(e => e.matricula === matricula);
     if (!emp) return;
 
+    // Verificar duplicidade local (rápido)
     if (markedToday[matricula]) {
-      Utils.toast(`${emp.name} já está marcado.`, 'warning');
+      Utils.toast(`${emp.name} já almoçou hoje.`, 'warning');
       return;
     }
 
+    // Bloquear botão imediatamente (UX)
     const btn = document.querySelector(`[data-mark="${matricula}"]`);
-    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Registrando...'; }
 
     try {
       const time = Utils.timeNow();
       await DB.markAttendance(emp, TODAY, time);
 
+      // Animação
       const card = document.getElementById(`card-${matricula}`);
       if (card) card.classList.add('just-marked');
 
@@ -195,23 +160,6 @@
     } catch (err) {
       Utils.toast(err.message || 'Erro ao registrar presença.', 'error');
       if (btn) { btn.disabled = false; btn.innerHTML = '<span>✓</span> Marcar'; }
-    }
-  }
-
-  // FIX: Desmarcar presença (toggle)
-  async function handleUnmark(matricula) {
-    const emp = allEmployees.find(e => e.matricula === matricula);
-    if (!emp) return;
-
-    const btn = document.querySelector(`[data-unmark="${matricula}"]`);
-    if (btn) { btn.disabled = true; }
-
-    try {
-      await DB.cancelAttendance(matricula, TODAY);
-      Utils.toast(`${emp.name} — presença removida.`, 'info');
-    } catch (err) {
-      Utils.toast(err.message || 'Erro ao remover presença.', 'error');
-      if (btn) { btn.disabled = false; }
     }
   }
 
@@ -226,28 +174,22 @@
     await handleMark(mat);
   }
 
-  // ── Histórico individual (FIX: try/catch com mensagem) ───
+  // ── Histórico individual ──────────────────────────────────
   async function showHistory(employeeId, name) {
-    const modal   = document.getElementById('history-modal');
-    const titleEl = document.getElementById('history-name');
-    const bodyEl  = document.getElementById('history-body');
-    const countEl = document.getElementById('history-count');
+    const modal    = document.getElementById('history-modal');
+    const titleEl  = document.getElementById('history-name');
+    const bodyEl   = document.getElementById('history-body');
+    const countEl  = document.getElementById('history-count');
 
-    titleEl.textContent  = name;
-    countEl.textContent  = '';
-    bodyEl.innerHTML     = '<div class="loading-spinner"></div>';
+    titleEl.textContent = name;
+    bodyEl.innerHTML = '<div class="loading-spinner"></div>';
     modal.classList.add('open');
 
     try {
-      // FIX: usar getEmployeeHistory com fallback automático
       const history = await DB.getEmployeeHistory(employeeId);
 
       if (history.length === 0) {
-        bodyEl.innerHTML = `
-          <div class="empty-state" style="padding:32px">
-            <span class="empty-icon">🍽</span>
-            <p>Nenhuma refeição registrada ainda.</p>
-          </div>`;
+        bodyEl.innerHTML = '<p class="text-muted" style="text-align:center;padding:20px">Nenhum registro encontrado.</p>';
       } else {
         countEl.textContent = `${history.length} refeição${history.length !== 1 ? 'ões' : ''}`;
         bodyEl.innerHTML = history.map(r => `
@@ -257,16 +199,8 @@
             <span style="font-size:.78rem;color:var(--text-3)">${r.time || ''}</span>
           </div>`).join('');
       }
-    } catch (err) {
-      bodyEl.innerHTML = `
-        <div style="text-align:center;padding:24px">
-          <div style="font-size:2rem;margin-bottom:8px">⚠️</div>
-          <p style="color:var(--danger);font-size:.9rem">${Utils.escHtml(err.message)}</p>
-          <p style="color:var(--text-3);font-size:.8rem;margin-top:8px">
-            Pode ser necessário criar um índice no Firestore. Veja o console para detalhes.
-          </p>
-        </div>`;
-      console.error('showHistory erro:', err);
+    } catch {
+      bodyEl.innerHTML = '<p style="color:var(--danger)">Erro ao carregar histórico.</p>';
     }
   }
 
@@ -279,20 +213,12 @@
     if (statTotal)   statTotal.textContent   = total;
     if (statMarked)  statMarked.textContent  = marked;
     if (statPending) statPending.textContent = pending;
-
-    // Atualizar contador de filtros
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-      const f = btn.dataset.filter;
-      const badge = btn.querySelector('.filter-count');
-      if (!badge) return;
-      if (f === 'all')     badge.textContent = total;
-      if (f === 'marked')  badge.textContent = marked;
-      if (f === 'pending') badge.textContent = pending;
-    });
   }
 
   // ── QR Code Scanner ──────────────────────────────────────
-  fabQr?.addEventListener('click', openQrScanner);
+  if (fabQr) {
+    fabQr.addEventListener('click', openQrScanner);
+  }
 
   function openQrScanner() {
     qrModal.classList.add('open');
@@ -305,10 +231,15 @@
       { facingMode: 'environment' },
       { fps: 10, qrbox: { width: 220, height: 220 } },
       async (decodedText) => {
+        // Sucesso — pausar scanner
         html5QrCode.pause(true);
         document.getElementById('qr-result').textContent = `QR lido: ${decodedText}`;
+
         await markByMatricula(decodedText);
-        setTimeout(closeQrScanner, 1800);
+
+        setTimeout(() => {
+          closeQrScanner();
+        }, 1800);
       }
     ).catch(err => {
       console.error('QR scanner error:', err);
@@ -321,7 +252,7 @@
       qrScanner.stop().catch(() => {});
       qrScanner = null;
     }
-    qrModal?.classList.remove('open');
+    if (qrModal) qrModal.classList.remove('open');
   }
 
   document.getElementById('close-qr')?.addEventListener('click', closeQrScanner);
@@ -329,20 +260,14 @@
     if (e.target === qrModal) closeQrScanner();
   });
 
-  // Fechar modal histórico
-  document.getElementById('history-modal')?.addEventListener('click', e => {
-    if (e.target.id === 'history-modal') {
-      e.target.classList.remove('open');
-    }
-  });
-
   // ── Tema ─────────────────────────────────────────────────
-  const savedTheme = localStorage.getItem('liga-theme') || 'dark';
+  const themeToggle = document.getElementById('theme-toggle');
+  const savedTheme  = localStorage.getItem('liga-theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
 
-  document.getElementById('theme-toggle')?.addEventListener('click', () => {
-    const cur  = document.documentElement.getAttribute('data-theme');
-    const next = cur === 'dark' ? 'light' : 'dark';
+  themeToggle?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next    = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('liga-theme', next);
   });

@@ -8,25 +8,24 @@
 // 3. Vá em Configurações do projeto → Seus apps → Web
 // 4. Copie o objeto firebaseConfig e cole abaixo
 // ============================================================
+
 const firebaseConfig = {
-  apiKey: "AIzaSyDP-04tBEyIq2xCYL5j2-hE1wLDchuiq5s",
-  authDomain: "cecan-refeicoes.firebaseapp.com",
-  projectId: "cecan-refeicoes",
-  storageBucket: "cecan-refeicoes.firebasestorage.app",
-  messagingSenderId: "924255868425",
-  appId: "1:924255868425:web:47757a36a550016bf34ad8"
+  apiKey:            "COLE_AQUI_SUA_API_KEY",
+  authDomain:        "seu-projeto.firebaseapp.com",
+  projectId:         "seu-projeto",
+  storageBucket:     "seu-projeto.appspot.com",
+  messagingSenderId: "000000000000",
+  appId:             "1:000000000000:web:xxxxxxxxxxxx"
 };
 
-// Inicializa apenas UMA vez
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// ── Inicializa Firebase ──────────────────────────────────────
+firebase.initializeApp(firebaseConfig);
 
-// Referências globais
-var db = firebase.firestore();
-var auth = firebase.auth();
+// ── Referências globais ──────────────────────────────────────
+const db   = firebase.firestore();
+const auth = firebase.auth();
 
-// Persistência offline (opcional)
+// ── Habilitar persistência offline (opcional) ────────────────
 db.enablePersistence({ synchronizeTabs: true })
   .catch(err => {
     if (err.code === 'failed-precondition') {

@@ -7,23 +7,22 @@
   <title>Registro de Refeições · CECAN</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
+    /* ── Layout específico desta página ──────────────────── */
     .app-layout {
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden; /* FIX: impede scroll horizontal */
     }
 
     .app-body {
       flex: 1;
-      padding: 12px 16px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
       max-width: 860px;
       margin: 0 auto;
       width: 100%;
-      box-sizing: border-box; /* FIX: inclui padding no width */
     }
 
     /* ── Topo com data e stats ───────────────────────────── */
@@ -31,41 +30,52 @@
       background: linear-gradient(135deg, var(--bg-2), var(--bg-3));
       border: 1px solid var(--border);
       border-radius: var(--radius-xl);
-      padding: 14px 18px;
+      padding: 16px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      flex-wrap: wrap; /* FIX: não quebra em mobile */
     }
 
-    .day-info h2 { font-size: .95rem; font-weight: 700; color: var(--text-1); margin-bottom: 2px; }
-    .day-info p  { font-size: .78rem; color: var(--text-3); }
+    .day-info h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-1);
+      margin-bottom: 2px;
+    }
 
-    .stats-mini { display: flex; gap: 6px; flex-shrink: 0; }
+    .day-info p {
+      font-size: .8rem;
+      color: var(--text-3);
+    }
+
+    .stats-mini {
+      display: flex;
+      gap: 8px;
+    }
 
     .stat-mini {
       background: var(--bg-0);
       border: 1px solid var(--border-sub);
       border-radius: var(--radius);
-      padding: 7px 10px;
+      padding: 8px 12px;
       text-align: center;
-      min-width: 52px;
+      min-width: 58px;
     }
 
     .stat-mini .n {
       font-family: var(--font-head);
-      font-size: 1.3rem;
+      font-size: 1.4rem;
       font-weight: 800;
       line-height: 1;
       color: var(--accent);
     }
 
-    .stat-mini.marked .n  { color: var(--success); }
+    .stat-mini.marked .n { color: var(--success); }
     .stat-mini.pending .n { color: var(--warning); }
 
     .stat-mini .l {
-      font-size: .6rem;
+      font-size: .65rem;
       color: var(--text-3);
       text-transform: uppercase;
       letter-spacing: .05em;
@@ -73,7 +83,12 @@
     }
 
     /* ── Busca ───────────────────────────────────────────── */
-    .search-section { display: flex; gap: 10px; align-items: center; }
+    .search-section {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
     .search-section .search-wrap { flex: 1; }
 
     /* ── Toolbar da lista ────────────────────────────────── */
@@ -82,25 +97,23 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 2px;
-      gap: 8px;
-      flex-wrap: wrap;
     }
 
-    .filter-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+    .filter-btns {
+      display: flex;
+      gap: 6px;
+    }
 
     .filter-btn {
       background: var(--bg-2);
       border: 1px solid var(--border-sub);
       border-radius: 99px;
-      padding: 4px 12px;
-      font-size: .78rem;
+      padding: 5px 14px;
+      font-size: .8rem;
       font-weight: 600;
       color: var(--text-2);
       cursor: pointer;
       transition: all var(--t);
-      display: flex;
-      align-items: center;
-      gap: 5px;
     }
 
     .filter-btn.active {
@@ -109,65 +122,19 @@
       color: var(--accent);
     }
 
-    .filter-count {
-      background: var(--bg-0);
-      border-radius: 99px;
-      padding: 0 5px;
-      font-size: .7rem;
-      min-width: 18px;
-      text-align: center;
+    /* ── Employee card - uso diário ─────────────────────── */
+    .emp-card .btn-mark {
+      min-width: 128px;
     }
 
-    /* ── Botão de desmarcar ──────────────────────────────── */
-    .btn-unmark {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      border: 1px solid var(--danger);
-      background: var(--danger-dim);
-      color: var(--danger);
-      cursor: pointer;
-      font-size: .85rem;
-      display: grid;
-      place-items: center;
-      transition: all var(--t);
-      flex-shrink: 0;
-    }
-
-    .btn-unmark:hover {
-      background: var(--danger);
-      color: white;
-    }
-
-    .hist-btn {
-      height: 34px;
-      font-size: .78rem;
-    }
-
-    /* ── Scroll da lista ─────────────────────────────────── */
+    /* ── Área de scroll da lista ─────────────────────────── */
     .list-scroll {
       flex: 1;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding-bottom: 88px;
-    }
-
-    /* ── Responsividade mobile ───────────────────────────── */
-    @media (max-width: 480px) {
-      .app-body { padding: 10px 12px; gap: 10px; }
-
-      .day-header { padding: 12px 14px; }
-      .day-info h2 { font-size: .88rem; }
-
-      .stat-mini { padding: 6px 8px; min-width: 46px; }
-      .stat-mini .n { font-size: 1.15rem; }
-      .stat-mini .l { font-size: .55rem; }
-
-      .topbar { padding: 0 12px; }
-      .topbar-brand h1 { font-size: .95rem; }
-      .topbar-brand span { display: none; }
+      padding-bottom: 80px; /* space for FAB */
     }
   </style>
 </head>
@@ -238,15 +205,7 @@
     <div class="list-toolbar">
       <span class="list-count" id="list-count">Carregando...</span>
       <div class="filter-btns">
-        <button class="filter-btn active" data-filter="all">
-          Todos <span class="filter-count" id="fc-all">–</span>
-        </button>
-        <button class="filter-btn" data-filter="pending">
-          Pendentes <span class="filter-count" id="fc-pending">–</span>
-        </button>
-        <button class="filter-btn" data-filter="marked">
-          Marcados <span class="filter-count" id="fc-marked">–</span>
-        </button>
+        <!-- filtros futuros aqui -->
       </div>
     </div>
 
@@ -320,6 +279,7 @@
 <script src="js/database.js"></script>
 
 <script>
+  // Verificar autenticação
   auth.onAuthStateChanged(user => {
     if (!user) window.location.href = 'index.html';
   });
