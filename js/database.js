@@ -66,11 +66,11 @@ const DB = (() => {
     try {
       const snap = await db.collection(COL_SECTORS).orderBy('name').get();
       // Se vazio, retorna lista padrão LOCAL (sem salvar no Firestore)
-      if (snap.empty) return getDefaultSectorList();
+      if (snap.empty) return [];
       return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     } catch (err) {
       console.error('getSectors:', err);
-      return getDefaultSectorList();
+      return [];
     }
   }
 
@@ -114,7 +114,7 @@ const DB = (() => {
       .onSnapshot(
         snap => {
           const list = snap.empty
-            ? getDefaultSectorList()
+            ? []
             : snap.docs.map(d => ({ id: d.id, ...d.data() }));
           callback(list);
         },
