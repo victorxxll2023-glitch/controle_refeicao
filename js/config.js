@@ -1,15 +1,3 @@
-// ============================================================
-// js/config.js — Configuração do Firebase
-// ⚠️  PREENCHA COM SUAS CREDENCIAIS DO FIREBASE
-// ============================================================
-// Como obter as credenciais:
-// 1. Acesse https://console.firebase.google.com
-// 2. Crie um projeto (ou acesse o existente)
-// 3. Vá em Configurações do projeto → Seus apps → Web
-// 4. Copie o objeto firebaseConfig e cole abaixo
-// ============================================================
-
-// js/config.js
 const firebaseConfig = {
   apiKey: "AIzaSyDP-04tBEyIq2xCYL5j2-hE1wLDchuiq5s",
   authDomain: "cecan-refeicoes.firebaseapp.com",
@@ -35,4 +23,4 @@ db.enablePersistence({ synchronizeTabs: true })
     }
   });
 
-console.log('🔥 Firebase inicializado com sucesso');
+console.log('Firebase inicializado com sucesso');
